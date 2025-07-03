@@ -280,3 +280,38 @@ async def get_chatRoom_info(db: AsyncSession, room_id: int):
     except SQLAlchemyError as e:
         traceback.print_exc()
         raise e
+
+
+async def get_private_chat_room_between_users(db: AsyncSession, user1_id: int, user2_id: int):
+    query = (
+        select(ChatRoomMember.chat_room_id).where(ChatRoomMember.user_id.in_([user1_id, user2_id]))
+        .group_by(ChatRoomMember.chat_room_id).having(func.count(ChatRoomMember.user_id) == 2)).subquery()
+
+    stmt = (select(ChatRoom).where(ChatRoom.id.in_(query)).where(ChatRoom.is_private.is_(True)).limit(1))
+
+    result = await db.execute(stmt)
+    return result.scalars().first()
+
+
+async def create_chat_message(db: AsyncSession, chat_room_id: int, sender_id: int, message_data: dict):
+    message_data.update({
+        "chat_room": chat_room_id,
+        "sender_id": sender_id,
+        "private": True
+    })
+    if "files" in message_data and isinstance(message_data["files"], list):
+        message_data["files"] = json.dumps(message_data["files"])
+
+    stmt = insert(ChatMessage).values(**message_data).returning(ChatMessage)
+    result = await db.execute(stmt)
+    await db.commit()
+    return result.scalars().first()
+
+
+async def create_private_chat_room(db: AsyncSession, current_user:User, user_id) -> ChatRoom:
+    get_user_by_id = await db.execute(select(User).where(User.id == user_id))
+    user_data = get_user_by_id.scalars().first()
+    stmt = insert(ChatRoom).values(is_private=True, building_id= current_user.building_id, name=user_data.name, profile_image=user_data.profile_image).returning(ChatRoom)
+    result = await db.execute(stmt)
+    await db.commit()
+    return result.scalars().first()

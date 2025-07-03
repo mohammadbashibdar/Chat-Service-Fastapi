@@ -234,3 +234,44 @@ async def get_chatRoom_info(db: AsyncSession, room_id: int):
                 code=400,
                 errors={"detail": str(e)}).dict()
         )
+
+
+async def send_private_message_service(db: AsyncSession, current_user: User, message_data: PrivateMessageCreate):
+    try:
+        chat_room = await crud_chat.get_private_chat_room_between_users(db, current_user.id, message_data.user_id)
+
+        if not chat_room:
+            chat_room = await crud_chat.create_private_chat_room(db, current_user, message_data.user_id)
+            await crud_chat.add_members_to_chat_room(
+                db=db,
+                members=ChatRoomMemberInput(
+                    chatroom_id=chat_room.id,
+                    users=[current_user.id, message_data.user_id],
+
+                )
+            )
+        data = message_data.dict()
+        data.pop("user_id", None)
+
+        chat_message = await crud_chat.create_chat_message(
+            db=db,
+            chat_room_id=chat_room.id,
+            sender_id=current_user.id,
+            message_data=data
+        )
+
+        return SuccessResponse(
+            success=True,
+            message="send message in privet chatroom successfully done",
+            data=ChatRoomInfoOut.from_orm(chat_room)
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                success=False,
+                message="Failed to send Message",
+                code=400,
+                errors={"detail": str(e)}).dict()
+        )

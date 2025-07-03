@@ -105,3 +105,13 @@ async def get_room_info(
         )
     else:
         return await services_chat.get_chatRoom_info(db, room_id)
+
+
+@router.post("/startChatWithUser", response_model=SuccessResponse[ChatRoomInfoOut],
+             responses={400: {"model": ErrorResponse}})
+async def create_start_message(
+        data: PrivateMessageCreate,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+):
+    return await services_chat.send_private_message_service(db, current_user, data)
