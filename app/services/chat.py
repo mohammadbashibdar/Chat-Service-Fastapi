@@ -51,3 +51,46 @@ async def create_chat_room(db: AsyncSession, data: ChatRoomCreate, current_user:
         message="chat room created successfully.",
         data=ChatRoomOut.from_orm(create)
     )
+
+
+async def addMember_to_chatroom(db: AsyncSession, data_add_member: ChatRoomMemberInput):
+    exist_chatroom = await crud_chat.get_chatroom_by_id(db, data_add_member.chatroom_id)
+    if not exist_chatroom:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                success=False,
+                message="Cannot add a member to the chat room. The entered chat room is not valid.",
+                code=404,
+                errors=None
+            ).dict()
+        )
+    check_exist_input_param = await crud_chat.check_exist_input_param_add_user(db, data_add_member)
+    errors = []
+    if check_exist_input_param["users"]:
+        errors.append(f"user by id {check_exist_input_param['users']} not found")
+
+    if errors:
+        return SuccessResponse(
+            success=False,
+            status_code=400,
+            message="، ".join(errors)
+        )
+
+    added_member = await crud_chat.add_members_to_chat_room(db, data_add_member)
+    if not added_member:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                success=False,
+                message="Bad request.",
+                code=404,
+                errors=None
+            ).dict()
+        )
+
+    return SuccessResponse(
+        success=True,
+        message="added member to chatroom successfully",
+        data=AddMemberOut(**added_member)
+    )

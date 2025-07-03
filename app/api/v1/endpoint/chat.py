@@ -26,3 +26,11 @@ async def create_chat_room(
     return await services_chat.create_chat_room(db, data, current_user)
 
 
+@router.put("/room/addMember", response_model=SuccessResponse[AddMemberOut],
+            responses={404: {"model": ErrorResponse}})
+async def addMember_to_chatroom(
+        data: ChatRoomMemberInput,
+        db: AsyncSession = Depends(get_db),
+
+):
+    return await services_chat.addMember_to_chatroom(db, data)
