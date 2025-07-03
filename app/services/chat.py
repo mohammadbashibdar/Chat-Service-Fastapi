@@ -94,3 +94,26 @@ async def addMember_to_chatroom(db: AsyncSession, data_add_member: ChatRoomMembe
         message="added member to chatroom successfully",
         data=AddMemberOut(**added_member)
     )
+
+
+async def remove_member_from_chatroom(data: ChatRoomMemberRemoveInput,db: AsyncSession):
+    exist_chatroom = await crud_chat.get_chatroom_by_id(db, data.chatroom_id)
+    if not exist_chatroom:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                success=False,
+                message="The entered chat room is not valid.",
+                code=404,
+                errors=None
+            ).dict()
+        )
+
+    result = await crud_chat.remove_members_from_chat_room(db, data)
+
+    return SuccessResponse(
+        success=True,
+        message="Removed members from chatroom successfully",
+        data=RemoveMemberOut(**result)
+    )
+

@@ -34,3 +34,12 @@ async def addMember_to_chatroom(
 
 ):
     return await services_chat.addMember_to_chatroom(db, data)
+
+
+@router.delete("/room/removeMember", response_model=SuccessResponse[RemoveMemberOut],
+               responses={404: {"model": ErrorResponse}})
+async def delete_room_member(
+        data: ChatRoomMemberRemoveInput,
+        db: AsyncSession = Depends(get_db),
+):
+    return await services_chat.remove_member_from_chatroom(data, db)

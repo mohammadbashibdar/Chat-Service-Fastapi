@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 import json
 
-from app.schemas.chat import ChatRoomCreate, ChatRoomMemberInput
+from app.schemas.chat import ChatRoomCreate, ChatRoomMemberInput, ChatRoomMemberRemoveInput
 from app.schemas.enum import ChatMessageType
 
 async def get_chatroom_by_name(db: AsyncSession, chat_name: str):
@@ -120,4 +120,45 @@ async def add_members_to_chat_room(db: AsyncSession, members: ChatRoomMemberInpu
         "is_private": is_private,
         "inserted": inserted,
         "already_exists": already_exists
+    }
+
+
+
+async def remove_members_from_chat_room(db: AsyncSession, members: ChatRoomMemberRemoveInput):
+    chatroom_id = members.chatroom_id
+    deleted_count = 0
+    not_found = {
+        "users": [],
+    }
+
+    if members.users:
+        stmt = select(ChatRoomMember.user_id).where(
+            and_(
+                ChatRoomMember.chat_room_id == chatroom_id,
+                ChatRoomMember.user_id.in_(members.users)
+            )
+        )
+        result = await db.execute(stmt)
+        existing_user_ids = result.scalars().all()
+        to_delete = set(existing_user_ids)
+        to_check = set(members.users)
+        not_found["users"] = list(to_check - to_delete)
+
+        if to_delete:
+            stmt = delete(ChatRoomMember).where(
+                and_(
+                    ChatRoomMember.chat_room_id == chatroom_id,
+                    ChatRoomMember.user_id.in_(list(to_delete))
+                )
+            )
+            res = await db.execute(stmt)
+            deleted_count += res.rowcount or 0
+
+
+    await db.commit()
+
+    return {
+        "chatroom_id": chatroom_id,
+        "deleted_count": deleted_count,
+        "not_found": not_found
     }
