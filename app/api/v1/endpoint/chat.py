@@ -87,3 +87,21 @@ async def get_message_chatroom(
         real_offset = (PaginationInput.count) * (PaginationInput.page)
         pagination_data = Pagination(count=PaginationInput.count, offset=real_offset)
         return await services_chat.get_messages_service(db,pagination_data, room_id)
+
+
+
+@router.get("/room/{room_id}/info", response_model=SuccessResponse[ChatRoomInfoOut],
+            responses={400: {"model": ErrorResponse}, 404: {"model": ErrorResponse}})
+async def get_room_info(
+        room_id: int,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    is_member = await is_user_in_chatroom(db, current_user.id, room_id)
+    if not is_member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this chat room.",
+        )
+    else:
+        return await services_chat.get_chatRoom_info(db, room_id)

@@ -269,3 +269,14 @@ async def get_messages_by_room_id(db: AsyncSession,room_id: int, data: ChatMessa
     except SQLAlchemyError as e:
         traceback.print_exc()
         raise e
+
+
+async def get_chatRoom_info(db: AsyncSession, room_id: int):
+    try:
+        query = select(ChatRoom).where(ChatRoom.id == room_id, ChatRoom.is_deleted == False)
+        result = await db.execute(query)
+        return result.scalars().first()
+
+    except SQLAlchemyError as e:
+        traceback.print_exc()
+        raise e

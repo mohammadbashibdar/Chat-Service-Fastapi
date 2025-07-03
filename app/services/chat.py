@@ -203,3 +203,34 @@ async def get_messages_service(db: AsyncSession, data: ChatMessages, room_id: in
                 code=400,
                 errors={"detail": str(e)}).dict()
         )
+
+
+async def get_chatRoom_info(db: AsyncSession, room_id: int):
+    try:
+        get_room_info = await crud_chat.get_chatRoom_info(db, room_id)
+        if not get_room_info:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=ErrorResponse(
+                    success=False,
+                    message="chatRoom not found.",
+                    code=404,
+                    errors=None
+                ).dict()
+            )
+
+        return SuccessResponse(
+            success=True,
+            message="get ChatRoom info successfully",
+            data=ChatRoomInfoOut.from_orm(get_room_info)
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                success=False,
+                message="Failed to fetch Message",
+                code=400,
+                errors={"detail": str(e)}).dict()
+        )
