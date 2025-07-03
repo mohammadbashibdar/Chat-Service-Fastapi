@@ -43,3 +43,14 @@ async def delete_room_member(
         db: AsyncSession = Depends(get_db),
 ):
     return await services_chat.remove_member_from_chatroom(data, db)
+
+
+
+@router.post("/sendMessage", response_model=SuccessResponse[ChatMessageOut],
+             responses={404: {"model": ErrorResponse}, 400: {"model": ErrorResponse}})
+async def send_message(
+        data: CreateMessageInput,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+):
+    return await services_chat.send_message(db, data, current_user.id)

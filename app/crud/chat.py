@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 import json
 
-from app.schemas.chat import ChatRoomCreate, ChatRoomMemberInput, ChatRoomMemberRemoveInput
+from app.schemas.chat import ChatRoomCreate, ChatRoomMemberInput, ChatRoomMemberRemoveInput, CreateMessageInput
 from app.schemas.enum import ChatMessageType
 
 async def get_chatroom_by_name(db: AsyncSession, chat_name: str):
@@ -162,3 +162,46 @@ async def remove_members_from_chat_room(db: AsyncSession, members: ChatRoomMembe
         "deleted_count": deleted_count,
         "not_found": not_found
     }
+
+async def verify_user_membership(db: AsyncSession, data: CreateMessageInput, user_id: int):
+    stmt = select(ChatRoomMember).where(ChatRoomMember.chat_room_id == data.chat_room,ChatRoomMember.user_id == user_id)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def verify_chatroom_is_not_read_only(db: AsyncSession, data: CreateMessageInput):
+    stmt = select(ChatRoom).where(ChatRoom.id == data.chat_room)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def create_message(db: AsyncSession, message_data: CreateMessageInput, sender_id: int):
+    new_message = ChatMessage(
+        type=message_data.type,
+        content=message_data.content,
+        chat_room=message_data.chat_room,
+        sender_id=sender_id,
+        is_deleted=False,
+        is_edited=False,
+        forwarded_from=None,
+        private=message_data.private,
+        like_count=0,
+        dislike_count=0,
+        vote_count=0,
+        vote_type=message_data.vote_type,
+        vote_is_anonymous=message_data.vote_is_anonymous,
+        vote_is_optional=message_data.vote_is_optional,
+        vote_expiry=message_data.vote_expiry,
+        vote_answers_visible_to=message_data.vote_answers_visible_to,
+        vote_options=message_data.vote_options,
+        vote_selected_options=message_data.vote_selected_options,
+        files=json.dumps(message_data.files) if message_data.files else None,
+    )
+
+    db.add(new_message)
+    await db.flush()
+    await db.commit()
+    await db.refresh(new_message)
+    if new_message.files:
+        new_message.files = json.loads(new_message.files)
+    return new_message

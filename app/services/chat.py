@@ -117,3 +117,48 @@ async def remove_member_from_chatroom(data: ChatRoomMemberRemoveInput,db: AsyncS
         data=RemoveMemberOut(**result)
     )
 
+
+async def send_message(db: AsyncSession, data: CreateMessageInput, sender_id: int):
+    check_exist_user = await crud_chat.verify_user_membership(db, data, sender_id)
+    if not check_exist_user:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content=ErrorResponse(
+                success=False,
+                message="User is not valid.",
+                code=404,
+                errors=None
+            ).dict()
+        )
+
+    check_read_only = await crud_chat.verify_chatroom_is_not_read_only(db, data)
+    if not check_read_only:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                success=False,
+                message="Chat room not found.",
+                code=400,
+                errors=None
+            ).dict()
+        )
+
+    create_message = await crud_chat.create_message(db, data, sender_id)
+    if not create_message:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                success=False,
+                message="Bad request.",
+                code=400,
+                errors=None
+            ).dict()
+        )
+
+    return SuccessResponse(
+        success=True,
+        message="send message created successfully",
+        data=ChatMessageOut.from_orm(create_message)
+    )
+
+
