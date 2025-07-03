@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 import json
 
 from app.schemas.chat import ChatRoomCreate, ChatRoomMemberInput, ChatRoomMemberRemoveInput, CreateMessageInput, \
-    ChatRoomResponse
+    ChatRoomResponse, ChatMessages
 from app.schemas.enum import ChatMessageType
 
 async def get_chatroom_by_name(db: AsyncSession, chat_name: str):
@@ -242,3 +242,30 @@ async def get_user_chat_rooms(db: AsyncSession, current_user: User) -> List[Chat
         )
 
     return chat_room_responses
+
+
+async def get_messages_by_room_id(db: AsyncSession,room_id: int, data: ChatMessages):
+    try:
+        query = (select(ChatMessage).options(selectinload(ChatMessage.user_sender))
+        .where(ChatMessage.chat_room == room_id, ChatMessage.is_deleted == False, ChatMessage.content != None).order_by(ChatMessage.created_at.desc()))
+
+        if data.offset is not None:
+            query = query.offset(data.offset)
+        if data.count is not None:
+            query = query.limit(data.count)
+
+        result = await db.execute(query)
+        messages = result.scalars().all()
+
+        for msg in messages:
+            if msg.files and isinstance(msg.files, str):
+                try:
+                    msg.files = json.loads(msg.files)
+                except json.JSONDecodeError:
+                    msg.files = []
+
+        return messages
+
+    except SQLAlchemyError as e:
+        traceback.print_exc()
+        raise e

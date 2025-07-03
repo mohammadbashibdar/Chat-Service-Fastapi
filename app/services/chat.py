@@ -181,3 +181,25 @@ async def get_all_chatRoom(db: AsyncSession, current_user: User):
                 code=400,
                 errors={"detail": str(e)}).dict()
         )
+
+
+async def get_messages_service(db: AsyncSession, data: ChatMessages, room_id: int):
+    try:
+        get_message_in_chatRoom =  await crud_chat.get_messages_by_room_id(db, room_id, data)
+
+        messages_out = [ChatMessagesOut.from_orm(msg) for msg in get_message_in_chatRoom]
+        return SuccessResponse(
+            success=True,
+            message="get message successfully",
+            data=messages_out
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                success=False,
+                message="Failed to fetch Message",
+                code=400,
+                errors={"detail": str(e)}).dict()
+        )

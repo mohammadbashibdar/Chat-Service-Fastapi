@@ -12,7 +12,8 @@ from app.schemas.responses import SuccessResponse, ErrorResponse
 from app.schemas.user import SessionBase, UserSimple
 from app.crud.chat import is_user_in_chatroom
 import app.services.chat as services_chat
-
+from app.schemas.enum import SessionType
+from app.schemas.base import PaginationInput, Pagination
 router = APIRouter()
 
 
@@ -64,3 +65,25 @@ async def get_all_chatRoom(
         current_user: User = Depends(get_current_user),
 ):
     return await services_chat.get_all_chatRoom(db, current_user)
+
+
+@router.get("/room/{room_id}/messages", response_model=SuccessResponse[ChatMessagesOut],
+            responses={400: {"model": ErrorResponse}, 403: {"model": ErrorResponse}})
+async def get_message_chatroom(
+        room_id: int,
+        PaginationInput: PaginationInput = Query("pagination things"),
+        # count: int = Query(1, description="Page number"),
+        # offset: int = Query(10, description="Page size"),
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    is_member = await is_user_in_chatroom(db, current_user.id, room_id)
+    if not is_member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this chat room.",
+        )
+    else:
+        real_offset = (PaginationInput.count) * (PaginationInput.page)
+        pagination_data = Pagination(count=PaginationInput.count, offset=real_offset)
+        return await services_chat.get_messages_service(db,pagination_data, room_id)
