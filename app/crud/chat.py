@@ -315,3 +315,9 @@ async def create_private_chat_room(db: AsyncSession, current_user:User, user_id)
     result = await db.execute(stmt)
     await db.commit()
     return result.scalars().first()
+
+
+async def search_users_by_name_or_mobile(db: AsyncSession, query: str):
+    stmt = select(User).where((User.name.ilike(f"%{query}%")) | (User.mobile_number.ilike(f"%{query}%"))).limit(50)
+    result = await db.execute(stmt)
+    return result.scalars().all()

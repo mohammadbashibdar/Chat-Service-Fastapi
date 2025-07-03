@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, Body, status, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
@@ -115,3 +117,11 @@ async def create_start_message(
         current_user: User = Depends(get_current_user),
 ):
     return await services_chat.send_private_message_service(db, current_user, data)
+
+
+@router.get("/users/{queryString}", response_model= SuccessResponse[List[UserSimple]])
+async def get_users_queryString(
+        queryString: str,
+        db: AsyncSession = Depends(get_db),
+):
+    return await services_chat.chat_search_users(db, queryString)

@@ -275,3 +275,14 @@ async def send_private_message_service(db: AsyncSession, current_user: User, mes
                 code=400,
                 errors={"detail": str(e)}).dict()
         )
+
+
+
+async def chat_search_users(db: AsyncSession, query: str):
+    get_users =  await crud_chat.search_users_by_name_or_mobile(db, query)
+    users_simple = [UserSimple.from_orm(user) for user in get_users]
+    return SuccessResponse(
+        success= True,
+        message= "get Users successfully.",
+        data=users_simple
+    )
