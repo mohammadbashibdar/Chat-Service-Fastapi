@@ -12,7 +12,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 import json
 
-from app.schemas.chat import ChatRoomCreate, ChatRoomMemberInput, ChatRoomMemberRemoveInput, CreateMessageInput
+from app.schemas.chat import ChatRoomCreate, ChatRoomMemberInput, ChatRoomMemberRemoveInput, CreateMessageInput, \
+    ChatRoomResponse
 from app.schemas.enum import ChatMessageType
 
 async def get_chatroom_by_name(db: AsyncSession, chat_name: str):
@@ -205,3 +206,39 @@ async def create_message(db: AsyncSession, message_data: CreateMessageInput, sen
     if new_message.files:
         new_message.files = json.loads(new_message.files)
     return new_message
+
+
+async def get_user_chat_rooms(db: AsyncSession, current_user: User) -> List[ChatRoomResponse]:
+    result = await db.execute(select(ChatRoom).join(ChatRoom.users)
+        .options(selectinload(ChatRoom.buildings), selectinload(ChatRoom.users))
+        .where(ChatRoom.is_deleted == False, User.id == current_user.id)
+    )
+    rooms = result.scalars().all()
+
+    chat_room_responses = []
+    for room in rooms:
+        name = room.name
+        profile_image = room.profile_image
+
+        if room.is_private:
+            other_users = [user for user in room.users if user.id != current_user.id]
+            if other_users:
+                other_user = other_users[0]
+                name = other_user.name
+                profile_image = other_user.profile_image
+
+        chat_room_responses.append(
+            ChatRoomResponse(
+                id=room.id,
+                building_id=current_user.building_id,
+                name=name,
+                description=room.description,
+                read_only=room.read_only,
+                mute=room.mute,
+                is_private=room.is_private,
+                profile_image=profile_image,
+                manager_ids=room.manager_ids,
+            )
+        )
+
+    return chat_room_responses

@@ -54,3 +54,13 @@ async def send_message(
         current_user: User = Depends(get_current_user),
 ):
     return await services_chat.send_message(db, data, current_user.id)
+
+
+
+@router.get("/chatRoom", response_model=SuccessResponse[ChatRoomResponse],
+            responses={400: {"model": ErrorResponse}})
+async def get_all_chatRoom(
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+):
+    return await services_chat.get_all_chatRoom(db, current_user)

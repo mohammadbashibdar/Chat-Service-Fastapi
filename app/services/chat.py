@@ -162,3 +162,22 @@ async def send_message(db: AsyncSession, data: CreateMessageInput, sender_id: in
     )
 
 
+async def get_all_chatRoom(db: AsyncSession, current_user: User):
+    try:
+        get_chatRoom_all = await crud_chat.get_user_chat_rooms(db, current_user)
+
+        return SuccessResponse(
+            success=True,
+            message="get ChatRoom successfully",
+            data=get_chatRoom_all
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                success=False,
+                message="Failed to fetch chatRoom",
+                code=400,
+                errors={"detail": str(e)}).dict()
+        )
