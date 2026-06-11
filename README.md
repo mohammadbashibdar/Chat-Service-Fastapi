@@ -31,7 +31,7 @@ All endpoints are available and testable via **Swagger UI**.
 It is recommended to use a virtual environment:
 
 ```bash
-git clone https://github.com/mohammadbashibdar/Chat-Fastapi-.git
+git clone https://github.com/mohammadbashibdar/Chat-Service-Fastapi.git
 cd Chat-Fastapi-
 python -m venv venv
 source venv/bin/activate  # On Windows use: venv\Scripts\activate
