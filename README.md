@@ -1,13 +1,13 @@
-# 🧠 Real-Time Chat Backend with FastAPI & WebSockets
+# 🧠 Real-Time Chat Backend with FastAPI
 
-This is a **backend-only real-time chat API** built using **Python**, **FastAPI**, and **WebSockets**.  
+This is a **backend-only real-time chat API** built using **Python**, **FastAPI**.  
 All endpoints are available and testable via **Swagger UI**.
 
 ---
 
 ## 🔧 Features
 
-- ⚡ Real-time communication via WebSocket
+- ⚡ Real-time communication via Api
 - 🧱 Fully backend-based (no frontend required)
 - 📄 Interactive API docs using Swagger (OpenAPI)
 - 👥 Multi-user chat logic ready to integrate with any frontend
